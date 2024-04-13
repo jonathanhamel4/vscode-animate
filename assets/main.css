@@ -1,0 +1,7 @@
+.drop {
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background-color: lightblue;
+}
