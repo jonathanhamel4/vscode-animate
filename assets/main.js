@@ -90,8 +90,8 @@ class AnimatedNode {
 
         this.maxWidth = this.clientWidth - this.size;
         this.maxHeight = this.clientHeight - this.size;
-        this.minHeight = this.size;
-        this.minWidth = this.size;
+        this.minHeight = 1;
+        this.minWidth = 1;
     }
 
     /** Creates the node that will be moving */
@@ -143,7 +143,7 @@ class AnimatedNode {
             this.y = newY;
             this.node.style.bottom = this.y + 'px';
             this.node.style.left = this.x + 'px';
-        }, 40);
+        }, 20);
     }
 
     /** Adjusts the slope and direction whenever there is a collision */
@@ -172,11 +172,11 @@ class AnimatedNode {
     increment() {
         switch (this.direction) {
             case 'right': {
-                let nextY = this.a * (this.x + 1) + this.b;
+                let nextY = this.a * (this.x + 0.5) + this.b;
                 return { x: this.x + 1, y: nextY };
             }
             case "left": {
-                let nextY = this.a * (this.x - 1) + this.b;
+                let nextY = this.a * (this.x - 0.5) + this.b;
                 return { x: this.x - 1, y: nextY };
             }
             default:
