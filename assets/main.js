@@ -39,6 +39,18 @@ const nodes = [];
     });
 }());
 
+const DIRECTION = function () {
+    const dir = {
+        RIGHT: 1,
+        LEFT: -1,
+    };
+    dir['OPPOSITE'] = {
+        [dir.LEFT]: dir.RIGHT,
+        [dir.RIGHT]: dir.LEFT
+    };
+    return dir;
+}();
+
 class AnimatedNode {
     constructor(x, y, size) {
         // init
@@ -49,14 +61,14 @@ class AnimatedNode {
         this.x = x;
         this.y = trueY;
         this.node = this.createNode();
+        this.node.style.backgroundColor = this.getRandomColor();
         this.setBoundaries();
 
         // slope info
         this.a = 0;
         this.b = 0;
         this.intervalId = null;
-        this.direction = 'right';
-        this.node.style.backgroundColor = this.getRandomColor();
+        this.direction = DIRECTION.RIGHT;
 
         // add
         this.appendHtmlNode();
@@ -124,7 +136,7 @@ class AnimatedNode {
         // initial slope (y2-y1)/(x2-x1)
         this.a = (rightCenterY - this.y) / (rightMostX - this.x);
         this.b = (this.a * this.x - this.y) * -1;
-        this.direction = 'right';
+        this.direction = DIRECTION.RIGHT;
         this.move();
     }
 
@@ -149,19 +161,9 @@ class AnimatedNode {
     /** Adjusts the slope and direction whenever there is a collision */
     newSlopeAndDirection(tempX) {
         const collisionWithSide = tempX <= this.minWidth || tempX >= this.maxWidth;
-        switch (this.direction) {
-            case 'right': {
-                if (collisionWithSide) {
-                    this.direction = 'left';
-                }
-                break;
-            }
-            case "left": {
-                if (collisionWithSide) {
-                    this.direction = 'right';
-                }
-                break;
-            }
+        if (collisionWithSide) {
+            this.direction = DIRECTION.OPPOSITE[this.direction];
+
         }
 
         this.a = this.a * - 1;
@@ -170,32 +172,22 @@ class AnimatedNode {
 
     /** Increments the x position to find a new (x, y) coordinate for the element */
     increment() {
-        switch (this.direction) {
-            case 'right': {
-                let nextY = this.a * (this.x + 0.5) + this.b;
-                return { x: this.x + 1, y: nextY };
-            }
-            case "left": {
-                let nextY = this.a * (this.x - 0.5) + this.b;
-                return { x: this.x - 1, y: nextY };
-            }
-            default:
-                return { x: this.x, y: this.y };
-        }
+        const updatedX = this.x + (0.5 * this.direction);
+        const nextY = this.a * updatedX + this.b;
+        return { x: updatedX, y: nextY };
     }
 
     /** Check if there has been a collision */
     hasCollision(x, y) {
-        switch (this.direction) {
-            case 'right': {
-                return x >= this.maxWidth || y >= this.maxHeight || y <= this.minHeight;
-            }
-            case "left": {
-                return x <= this.minWidth || y >= this.maxHeight || y <= this.minHeight;
-            }
-            default:
-                return false;
+        const topBottomCollision = y >= this.maxHeight || y <= this.minHeight;
+        if (topBottomCollision) {
+            return true;
         }
+
+        if (this.direction === DIRECTION.RIGHT) {
+            return x >= this.maxWidth;
+        }
+        return x <= this.minWidth;
     }
 
     /** Removes the node from the html and clears the interval */
