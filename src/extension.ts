@@ -10,7 +10,6 @@ export function activate(context: vscode.ExtensionContext) {
 export function deactivate() { }
 
 class AnimateView {
-
 	public static readonly viewType = 'animate';
 	private view?: vscode.WebviewView;
 	private readonly extensionUri;
