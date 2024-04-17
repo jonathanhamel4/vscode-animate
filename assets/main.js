@@ -1,10 +1,8 @@
 // This script will be run within the webview itself
 // It cannot access the main VS Code APIs directly.
-const nodes = [];
-
-(function () {
+function main(browser) {
     // const vscode = acquireVsCodeApi();
-
+    const nodes = [];
     const stopElement = document.querySelector('#stop');
     stopElement.style.display = 'none';
     stopElement.onclick = () => {
@@ -31,13 +29,21 @@ const nodes = [];
 
         clearInterval(sizeIntervalId);
         sizeIntervalId = null;
-        tempAnimatedNode.animate();
+        if (browser) {
+            tempAnimatedNode.animate();
+        }
         tempAnimatedNode = null;
         size = 5;
         stopElement.style.display = 'block';
         // vscode.postMessage({ type: 'clicked' });
     });
-}());
+
+    window.addEventListener('resize', () => {
+        nodes.forEach((node) => {
+            node.setWidthAndHeight();
+        });
+    });
+};
 
 const DIRECTION = function () {
     const dir = {
@@ -55,13 +61,11 @@ class AnimatedNode {
     constructor(x, y, size) {
         // init
         this.size = size;
-        this.clientWidth = window.innerWidth;
-        this.clientHeight = window.innerHeight;
+        this.setWidthAndHeight();
         const trueY = this.clientHeight - y;
         this.x = x;
         this.y = trueY;
         this.node = this.createNode();
-        this.node.style.backgroundColor = this.getRandomColor();
         this.setBoundaries();
 
         // slope info
@@ -84,6 +88,15 @@ class AnimatedNode {
         return color;
     }
 
+    setWidthAndHeight() {
+        this.clientWidth = window.innerWidth;
+        this.clientHeight = window.innerHeight;
+        this.maxWidth = this.clientWidth - this.size;
+        this.maxHeight = this.clientHeight - this.size;
+        this.minHeight = 1;
+        this.minWidth = 1;
+    }
+
     /** Increments the size and centers the element with the cursor while the cursor is being held */
     incrementSize() {
         this.size += 2;
@@ -100,10 +113,7 @@ class AnimatedNode {
         this.node.style.width = this.size + 'px';
         this.node.style.height = this.size + 'px';
 
-        this.maxWidth = this.clientWidth - this.size;
-        this.maxHeight = this.clientHeight - this.size;
-        this.minHeight = 1;
-        this.minWidth = 1;
+        this.setWidthAndHeight();
     }
 
     /** Creates the node that will be moving */
@@ -111,11 +121,7 @@ class AnimatedNode {
         const template = document.querySelector("#drop");
         const copy = template.cloneNode(true).content;
         const node = copy.querySelector('.drop');
-
-        node.style.left = this.x + 'px';
-        node.style.bottom = this.y + 'px';
-        node.style.width = this.size + 'px';
-        node.style.height = this.size + 'px';
+        node.style.backgroundColor = this.getRandomColor();
         return node;
     }
 
@@ -129,6 +135,11 @@ class AnimatedNode {
      * initial click and the (x,y) defined by the center of the right edge.
      */
     animate() {
+        this.setInitialSlope();
+        this.move();
+    }
+
+    setInitialSlope() {
         const rightCenterY = this.clientHeight / 2;
         const rightMostX = this.clientWidth;
 
@@ -137,7 +148,6 @@ class AnimatedNode {
         this.a = (rightCenterY - this.y) / (rightMostX - this.x);
         this.b = (this.a * this.x - this.y) * -1;
         this.direction = DIRECTION.RIGHT;
-        this.move();
     }
 
     /** Defines the movement and collision behaviours through an interval */
@@ -195,4 +205,10 @@ class AnimatedNode {
         clearInterval(this.intervalId);
         this.node.remove();
     }
+}
+
+if (typeof jest !== 'undefined') {
+    module.exports = { AnimatedNode, main, DIRECTION };
+} else {
+    main(true);
 }
