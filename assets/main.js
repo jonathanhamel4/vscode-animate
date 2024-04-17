@@ -3,19 +3,12 @@
 function main(browser) {
     // const vscode = acquireVsCodeApi();
     const nodes = [];
-    const stopElement = document.querySelector('#stop');
-    stopElement.style.display = 'none';
-    stopElement.onclick = () => {
-        nodes.forEach((node) => {
-            node.stop();
-        });
-        nodes = [];
-    };
+    const stop = new StopButton(nodes);
 
     let sizeIntervalId = null;
     let tempAnimatedNode = null;
     document.addEventListener('mousedown', (e) => {
-        if (e.target.id === 'stop') { return; }
+        if (e.target.id === stop.button.id) { return; }
 
         tempAnimatedNode = new AnimatedNode(e.clientX, e.clientY, 5);
         nodes.push(tempAnimatedNode);
@@ -25,7 +18,7 @@ function main(browser) {
     });
 
     document.addEventListener('mouseup', (e) => {
-        if (e.target.id === 'stop') { return; }
+        if (e.target.id === stop.button.id) { return; }
 
         clearInterval(sizeIntervalId);
         sizeIntervalId = null;
@@ -34,7 +27,7 @@ function main(browser) {
         }
         tempAnimatedNode = null;
         size = 5;
-        stopElement.style.display = 'block';
+        stop.show();
         // vscode.postMessage({ type: 'clicked' });
     });
 
@@ -56,6 +49,27 @@ const DIRECTION = function () {
     };
     return dir;
 }();
+
+class StopButton {
+    constructor(nodes) {
+        this.nodes = nodes;
+        this.button = document.querySelector('#stop');
+        this.button.style.display = 'none';
+        this.button.onclick = this.click.bind(this);
+    }
+
+    click() {
+        this.nodes.forEach((node) => {
+            node.stop();
+        });
+        this.nodes.length = 0;
+        this.button.style.display = 'none';
+    }
+
+    show() {
+        this.button.style.display = '';
+    }
+}
 
 class AnimatedNode {
     constructor(x, y, size) {

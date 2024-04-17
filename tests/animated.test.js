@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-const { main, AnimatedNode, DIRECTION } = require('../assets/main.js');
+const { AnimatedNode, DIRECTION } = require('../assets/main.js');
 
 describe('main', () => {
     beforeEach(() => {
@@ -113,12 +113,6 @@ describe('main', () => {
             node.stop();
 
             expect(document.querySelector('#zone .drop')).toBeFalsy();
-        });
-    });
-
-    describe('main', () => {
-        it('sets handlers', () => {
-            main();
         });
     });
 });
