@@ -1,7 +1,4 @@
-// This script will be run within the webview itself
-// It cannot access the main VS Code APIs directly.
-function main(browser) {
-    // const vscode = acquireVsCodeApi();
+function main() {
     const animator = new Animator();
 
     document.addEventListener('mousedown', (e) => {
@@ -12,7 +9,6 @@ function main(browser) {
     document.addEventListener('mouseup', (e) => {
         if (e.target.id === animator.stopButton.id) { return; }
         animator.releaseNode(true);
-        // vscode.postMessage({ type: 'clicked' });
     });
 
     window.addEventListener('resize', () => {
@@ -34,11 +30,19 @@ const DIRECTION = function () {
 
 class Animator {
     constructor() {
+        this.createZone();
         this.nodes = [];
         const resetNodes = this.resetNodes.bind(this);
-        this.stopButton = new StopButton('stop', 'body', resetNodes);
+        this.stopButton = new StopButton('stop', '#zone', resetNodes);
         this.sizeIntervalId = null;
         this.tempAnimatedNode = null;
+    }
+
+    createZone() {
+        this.zone = document.createElement('div');
+        this.zone.id = 'zone';
+        const body = document.querySelector('body');
+        document.querySelector('body').insertBefore(this.zone, body.firstChild);
     }
 
     resetNodes() {
@@ -49,7 +53,8 @@ class Animator {
     }
 
     createNode(x, y) {
-        this.tempAnimatedNode = new AnimatedNode(x, y, 5);
+        const clientDimensions = this.zone.getBoundingClientRect();
+        this.tempAnimatedNode = new AnimatedNode(x, y, 5, clientDimensions, '#zone');
         this.sizeIntervalId = setInterval(() => {
             this.tempAnimatedNode.incrementSize();
         }, 200);
@@ -71,8 +76,10 @@ class Animator {
     }
 
     resize() {
+        const clientDimensions = this.zone.getBoundingClientRect();
         this.nodes.forEach((node) => {
-            node.setWidthAndHeight();
+            node.setDimensions(clientDimensions);
+            node.setNodePosition();
         });
     }
 
@@ -106,15 +113,15 @@ class StopButton {
 }
 
 class AnimatedNode {
-    constructor(x, y, size) {
+    constructor(x, y, size, dimensions, selector) {
         // init
+        this.setDimensions(dimensions);
         this.size = size;
-        this.setWidthAndHeight();
-        const trueY = this.clientHeight - y;
-        this.x = x;
-        this.y = trueY;
+        this.x = x - this.dimensions.left;
+        const trueY = y - this.dimensions.top;
+        this.y = this.dimensions.height - trueY;
         this.node = this.createNode();
-        this.setBoundaries();
+        this.setNodePosition();
 
         // slope info
         this.a = 0;
@@ -123,7 +130,26 @@ class AnimatedNode {
         this.direction = DIRECTION.RIGHT;
 
         // add
-        this.appendHtmlNode();
+        this.appendHtmlNode(selector);
+    }
+
+    resetOverflow() {
+        if (this.x <= this.size) {
+            this.x = this.size + 5;
+        }
+        if (this.x >= (this.dimensions.width - this.size)) {
+            this.x = this.dimensions.width - this.size - 5;
+        }
+        if (this.y <= this.size) {
+            this.y = this.size + 5;
+        }
+        if (this.y >= (this.dimensions.height - this.size)) {
+            this.y = this.dimensions.height - this.size - 5;
+        }
+    }
+
+    setDimensions(dimensions, setOverflow = true) {
+        this.dimensions = dimensions;
     }
 
     /** returns a random color */
@@ -136,13 +162,12 @@ class AnimatedNode {
         return color;
     }
 
-    setWidthAndHeight() {
-        this.clientWidth = window.innerWidth;
-        this.clientHeight = window.innerHeight;
-        this.maxWidth = this.clientWidth - this.size;
-        this.maxHeight = this.clientHeight - this.size;
-        this.minHeight = 1;
-        this.minWidth = 1;
+    setNodePosition() {
+        this.resetOverflow();
+        this.node.style.left = this.x + 'px';
+        this.node.style.bottom = this.y + 'px';
+        this.node.style.width = this.size + 'px';
+        this.node.style.height = this.size + 'px';
     }
 
     /** Increments the size and centers the element with the cursor while the cursor is being held */
@@ -152,17 +177,7 @@ class AnimatedNode {
         this.x -= 1;
         this.y -= 1;
 
-        this.setBoundaries();
-    }
-
-    /** Sets the boundaries of the zone using the whole client dimensions */
-    setBoundaries() {
-        this.node.style.left = this.x + 'px';
-        this.node.style.bottom = this.y + 'px';
-        this.node.style.width = this.size + 'px';
-        this.node.style.height = this.size + 'px';
-
-        this.setWidthAndHeight();
+        this.setNodePosition();
     }
 
     /** Creates the node that will be moving */
@@ -175,8 +190,8 @@ class AnimatedNode {
     }
 
     /** Adds the node to the html document */
-    appendHtmlNode() {
-        const zone = document.querySelector('#zone');
+    appendHtmlNode(selector) {
+        const zone = document.querySelector(selector);
         zone.appendChild(this.node);
     }
 
@@ -189,8 +204,8 @@ class AnimatedNode {
     }
 
     setInitialSlope() {
-        const rightCenterY = this.clientHeight / 2;
-        const rightMostX = this.clientWidth;
+        const rightCenterY = this.dimensions.height / 2;
+        const rightMostX = this.dimensions.width;
 
         // y = ax + b;
         // initial slope (y2-y1)/(x2-x1)
@@ -219,7 +234,7 @@ class AnimatedNode {
 
     /** Adjusts the slope and direction whenever there is a collision */
     newSlopeAndDirection(tempX) {
-        const collisionWithSide = tempX <= this.minWidth || tempX >= this.maxWidth;
+        const collisionWithSide = tempX <= 0 || tempX >= (this.dimensions.width - this.size);
         if (collisionWithSide) {
             this.direction = DIRECTION.OPPOSITE[this.direction];
 
@@ -238,15 +253,15 @@ class AnimatedNode {
 
     /** Check if there has been a collision */
     hasCollision(x, y) {
-        const topBottomCollision = y >= this.maxHeight || y <= this.minHeight;
+        const topBottomCollision = y >= (this.dimensions.height - this.size) || y <= 0;
         if (topBottomCollision) {
             return true;
         }
 
         if (this.direction === DIRECTION.RIGHT) {
-            return x >= this.maxWidth;
+            return x >= (this.dimensions.width - this.size);
         }
-        return x <= this.minWidth;
+        return x <= 0;
     }
 
     /** Removes the node from the html and clears the interval */

@@ -8,12 +8,13 @@
 }
 
 #stop {
-    border-radius: 5px;
+    border-radius: 15px;
     border: none;
     background-color: lightblue;
     cursor: pointer;
     opacity: 0.2;
     transition: all 0.3s ease-in;
+    margin: 5px 0 0 5px;
 }
 
 #stop:hover {
@@ -22,4 +23,19 @@
 
 .noOverflow {
     overflow: hidden;
+}
+
+#zone {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    bottom: 20px;
+    right: 20px;
+    background-color: #27373b;
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+body.light #zone {
+    background-color: #effcff;
 }

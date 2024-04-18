@@ -53,6 +53,7 @@ class AnimateView {
 		const styleMainUri = this.view?.webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'assets', 'main.css'));
 
 		const nonce = getNonce();
+		const bodyClass = vscode.window.activeColorTheme.kind === 2 ? 'dark' : 'light';
 
 		return `<!DOCTYPE html>
 			<html lang="en">
@@ -64,8 +65,7 @@ class AnimateView {
 				<title>Animate</title>
 				<link href="${styleMainUri}" rel="stylesheet">
 			</head>
-			<body class="noOverflow">
-				<div id="zone"><div>
+			<body class="noOverflow ${bodyClass}">
 				<template id="drop"><span class="drop"></span></template>
 				<script nonce="${nonce}" src="${scriptUri}"></script>
 			</body>
