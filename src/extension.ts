@@ -55,7 +55,7 @@ class AnimateView {
 		const nonce = getNonce();
 
 		return `<!DOCTYPE html>
-			<html lang="en" style="overflow: hidden;">
+			<html lang="en">
 			<head>
 				<meta charset="UTF-8">
 				<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${this.view?.webview.cspSource}; script-src 'nonce-${nonce}';">
@@ -64,8 +64,7 @@ class AnimateView {
 				<title>Animate</title>
 				<link href="${styleMainUri}" rel="stylesheet">
 			</head>
-			<body style="overflow: hidden;">
-				<button id="stop" type="button">Stop</button>
+			<body class="noOverflow">
 				<div id="zone"><div>
 				<template id="drop"><span class="drop"></span></template>
 				<script nonce="${nonce}" src="${scriptUri}"></script>

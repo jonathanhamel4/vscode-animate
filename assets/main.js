@@ -2,39 +2,21 @@
 // It cannot access the main VS Code APIs directly.
 function main(browser) {
     // const vscode = acquireVsCodeApi();
-    const nodes = [];
-    const stop = new StopButton(nodes);
+    const animator = new Animator();
 
-    let sizeIntervalId = null;
-    let tempAnimatedNode = null;
     document.addEventListener('mousedown', (e) => {
-        if (e.target.id === stop.button.id) { return; }
-
-        tempAnimatedNode = new AnimatedNode(e.clientX, e.clientY, 5);
-        nodes.push(tempAnimatedNode);
-        sizeIntervalId = setInterval(() => {
-            tempAnimatedNode.incrementSize();
-        }, 200);
+        if (e.target.id === animator.stopButton.id) { return; }
+        animator.createNode(e.clientX, e.clientY);
     });
 
     document.addEventListener('mouseup', (e) => {
-        if (e.target.id === stop.button.id) { return; }
-
-        clearInterval(sizeIntervalId);
-        sizeIntervalId = null;
-        if (browser) {
-            tempAnimatedNode.animate();
-        }
-        tempAnimatedNode = null;
-        size = 5;
-        stop.show();
+        if (e.target.id === animator.stopButton.id) { return; }
+        animator.releaseNode(true);
         // vscode.postMessage({ type: 'clicked' });
     });
 
     window.addEventListener('resize', () => {
-        nodes.forEach((node) => {
-            node.setWidthAndHeight();
-        });
+        animator.resize();
     });
 };
 
@@ -50,19 +32,71 @@ const DIRECTION = function () {
     return dir;
 }();
 
-class StopButton {
-    constructor(nodes) {
-        this.nodes = nodes;
-        this.button = document.querySelector('#stop');
-        this.button.style.display = 'none';
-        this.button.onclick = this.click.bind(this);
+class Animator {
+    constructor() {
+        this.nodes = [];
+        const resetNodes = this.resetNodes.bind(this);
+        this.stopButton = new StopButton('stop', 'body', resetNodes);
+        this.sizeIntervalId = null;
+        this.tempAnimatedNode = null;
     }
 
-    click() {
+    resetNodes() {
         this.nodes.forEach((node) => {
             node.stop();
         });
-        this.nodes.length = 0;
+        this.nodes = [];
+    }
+
+    createNode(x, y) {
+        this.tempAnimatedNode = new AnimatedNode(x, y, 5);
+        this.sizeIntervalId = setInterval(() => {
+            this.tempAnimatedNode.incrementSize();
+        }, 200);
+    }
+
+    releaseNode(browser) {
+        clearInterval(this.sizeIntervalId);
+        if (browser) {
+            this.tempAnimatedNode.animate();
+        }
+        this.nodes.push(this.tempAnimatedNode);
+        this.stopButton.show();
+        this.reset();
+    }
+
+    reset() {
+        this.tempAnimatedNode = null;
+        this.sizeIntervalId = null;
+    }
+
+    resize() {
+        this.nodes.forEach((node) => {
+            node.setWidthAndHeight();
+        });
+    }
+
+}
+
+class StopButton {
+    constructor(id, container, reset) {
+        this.id = id;
+        this.button = document.createElement('button');
+        this.button.type = 'button';
+        this.button.id = id;
+        this.button.innerText = 'Stop';
+        this.button.style.display = 'none';
+
+        const onClick = () => {
+            reset();
+            this.click();
+        };
+
+        this.button.onclick = onClick;
+        document.querySelector(container).insertBefore(this.button, document.querySelector(container).firstChild);
+    }
+
+    click() {
         this.button.style.display = 'none';
     }
 
@@ -113,6 +147,7 @@ class AnimatedNode {
 
     /** Increments the size and centers the element with the cursor while the cursor is being held */
     incrementSize() {
+        if (this.size > 50) { return; }
         this.size += 2;
         this.x -= 1;
         this.y -= 1;

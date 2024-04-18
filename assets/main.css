@@ -19,3 +19,7 @@
 #stop:hover {
     opacity: 1;
 }
+
+.noOverflow {
+    overflow: hidden;
+}
