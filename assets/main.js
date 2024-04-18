@@ -204,18 +204,21 @@ class AnimatedNode {
     }
 
     setInitialSlope() {
-        const rightCenterY = this.dimensions.height / 2;
-        const rightMostX = this.dimensions.width;
+        const centerY = this.dimensions.height / 2;
+        const goingRight = Math.round(Math.random()) === 1;
+        // const goingRight = true;
+        const initialX = goingRight ? this.dimensions.width : 0;
 
         // y = ax + b;
         // initial slope (y2-y1)/(x2-x1)
-        this.a = (rightCenterY - this.y) / (rightMostX - this.x);
+        this.a = (centerY - this.y) / (initialX - this.x);
         this.b = (this.a * this.x - this.y) * -1;
-        this.direction = DIRECTION.RIGHT;
+        this.direction = goingRight ? DIRECTION.RIGHT : DIRECTION.LEFT;
     }
 
     /** Defines the movement and collision behaviours through an interval */
     move() {
+        const randomSpeed = (Math.random() * (80 - 20) + 20);
         this.intervalId = setInterval(() => {
             const { x: newX, y: newY } = this.increment();
 
@@ -229,7 +232,7 @@ class AnimatedNode {
             this.y = newY;
             this.node.style.bottom = this.y + 'px';
             this.node.style.left = this.x + 'px';
-        }, 20);
+        }, randomSpeed);
     }
 
     /** Adjusts the slope and direction whenever there is a collision */
@@ -246,7 +249,13 @@ class AnimatedNode {
 
     /** Increments the x position to find a new (x, y) coordinate for the element */
     increment() {
-        const updatedX = this.x + (0.5 * this.direction);
+        let stepSize = 0.5;
+        if (Math.abs(this.a) > 12) {
+            stepSize = 0.12;
+        } else if (Math.abs(this.a) > 2) {
+            stepSize = 0.25;
+        }
+        const updatedX = this.x + (stepSize * this.direction);
         const nextY = this.a * updatedX + this.b;
         return { x: updatedX, y: nextY };
     }
