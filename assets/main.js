@@ -115,8 +115,9 @@ class StopButton {
 class AnimatedNode {
     constructor(x, y, size, dimensions, selector) {
         // init
-        this.setDimensions(dimensions);
         this.size = size;
+        this.removed = false;
+        this.setDimensions(dimensions);
         this.x = x - this.dimensions.left;
         const trueY = y - this.dimensions.top;
         this.y = this.dimensions.height - trueY;
@@ -126,29 +127,46 @@ class AnimatedNode {
         // slope info
         this.a = 0;
         this.b = 0;
-        this.intervalId = null;
         this.direction = DIRECTION.RIGHT;
 
         // add
         this.appendHtmlNode(selector);
     }
 
+    get maxWidth() {
+        return this.dimensions.width - this.size;
+    }
+
+    get maxHeight() {
+        return this.dimensions.height - this.size;
+    }
+
+    get minHeight() {
+        return 0;
+    }
+
+    get minWidth() {
+        return 0;
+    }
+
+    /** If a drop was created outside of the zone */
     resetOverflow() {
         if (this.x <= this.size) {
             this.x = this.size + 5;
         }
-        if (this.x >= (this.dimensions.width - this.size)) {
-            this.x = this.dimensions.width - this.size - 5;
+        if (this.x >= this.maxWidth) {
+            this.x = this.maxWidth - 5;
         }
         if (this.y <= this.size) {
             this.y = this.size + 5;
         }
-        if (this.y >= (this.dimensions.height - this.size)) {
-            this.y = this.dimensions.height - this.size - 5;
+        if (this.y >= this.maxHeight) {
+            this.y = this.maxHeight - 5;
         }
     }
 
-    setDimensions(dimensions, setOverflow = true) {
+    /** Keeps the DomRect from the container */
+    setDimensions(dimensions) {
         this.dimensions = dimensions;
     }
 
@@ -162,6 +180,7 @@ class AnimatedNode {
         return color;
     }
 
+    /** Sets the actual absolute positioning of the drop */
     setNodePosition() {
         this.resetOverflow();
         this.node.style.left = this.x + 'px';
@@ -176,7 +195,6 @@ class AnimatedNode {
         this.size += 2;
         this.x -= 1;
         this.y -= 1;
-
         this.setNodePosition();
     }
 
@@ -200,13 +218,63 @@ class AnimatedNode {
      */
     animate() {
         this.setInitialSlope();
-        this.move();
+        this.moveWithJsAnimation();
     }
 
+    /** Uses the animate JS api to animate the drop between the edges
+     * and uses the `finished` promise to trigger the next animation
+     */
+    moveWithJsAnimation() {
+        const nextCollision = this.getNextCrossingCoordinate();
+        const xDiff = nextCollision.x - this.x;
+        const yDiff = (nextCollision.y - this.y) * -1;
+        const keyframes = [
+            { transform: `translate(${xDiff}px, ${yDiff}px)` },
+        ];
+        const lengthToTravel = Math.sqrt(Math.abs(xDiff) ** 2 + Math.abs(yDiff) ** 2);
+        const fastestDuration = 2000 * lengthToTravel / this.maxWidth;
+        const sizeFactor = this.size === 5 ? 1 : 1 + (this.size / 10);
+        const duration = fastestDuration * sizeFactor;
+
+        const animation = {
+            duration,
+            iterations: 1,
+        };
+
+        const promise = this.node.animate(keyframes, animation);
+
+        promise.finished.then(() => {
+            if (this.removed) { return; };
+            this.x = nextCollision.x;
+            this.y = nextCollision.y;
+            this.node.style.bottom = this.y + 'px';
+            this.node.style.left = this.x + 'px';
+            this.newSlopeAndDirection();
+            this.moveWithJsAnimation();
+        });
+    }
+
+    /** Given a slope and a direction, find the next logical intersection with the boundary */
+    getNextCrossingCoordinate() {
+        const xIfHittingSide = this.direction === DIRECTION.RIGHT ? this.maxWidth : this.minWidth;
+        const yIfHittingSide = this.a * xIfHittingSide + this.b;
+        if (yIfHittingSide <= this.maxHeight && yIfHittingSide >= this.minHeight) {
+            return { x: xIfHittingSide, y: yIfHittingSide };
+        }
+
+        let tempY;
+        if (this.direction === DIRECTION.RIGHT) {
+            tempY = this.a > 0 ? this.maxHeight : this.minHeight;
+        } else {
+            tempY = this.a > 0 ? this.minHeight : this.maxHeight;
+        }
+        return { x: (tempY - this.b) / this.a, y: tempY };
+    }
+
+    /** Defines the initial slope of the drop given the starting point and the first collision */
     setInitialSlope() {
         const centerY = this.dimensions.height / 2;
         const goingRight = Math.round(Math.random()) === 1;
-        // const goingRight = true;
         const initialX = goingRight ? this.dimensions.width : 0;
 
         // y = ax + b;
@@ -216,28 +284,9 @@ class AnimatedNode {
         this.direction = goingRight ? DIRECTION.RIGHT : DIRECTION.LEFT;
     }
 
-    /** Defines the movement and collision behaviours through an interval */
-    move() {
-        const randomSpeed = (Math.random() * (80 - 20) + 20);
-        this.intervalId = setInterval(() => {
-            const { x: newX, y: newY } = this.increment();
-
-            if (this.hasCollision(newX, newY)) {
-                clearInterval(this.intervalId);
-                this.newSlopeAndDirection(newX, newY);
-                this.move();
-            }
-
-            this.x = newX;
-            this.y = newY;
-            this.node.style.bottom = this.y + 'px';
-            this.node.style.left = this.x + 'px';
-        }, randomSpeed);
-    }
-
     /** Adjusts the slope and direction whenever there is a collision */
-    newSlopeAndDirection(tempX) {
-        const collisionWithSide = tempX <= 0 || tempX >= (this.dimensions.width - this.size);
+    newSlopeAndDirection() {
+        const collisionWithSide = this.x <= this.minWidth || this.x >= this.maxWidth;
         if (collisionWithSide) {
             this.direction = DIRECTION.OPPOSITE[this.direction];
 
@@ -247,36 +296,11 @@ class AnimatedNode {
         this.b = this.y - this.a * this.x;
     }
 
-    /** Increments the x position to find a new (x, y) coordinate for the element */
-    increment() {
-        let stepSize = 0.5;
-        if (Math.abs(this.a) > 12) {
-            stepSize = 0.12;
-        } else if (Math.abs(this.a) > 2) {
-            stepSize = 0.25;
-        }
-        const updatedX = this.x + (stepSize * this.direction);
-        const nextY = this.a * updatedX + this.b;
-        return { x: updatedX, y: nextY };
-    }
-
-    /** Check if there has been a collision */
-    hasCollision(x, y) {
-        const topBottomCollision = y >= (this.dimensions.height - this.size) || y <= 0;
-        if (topBottomCollision) {
-            return true;
-        }
-
-        if (this.direction === DIRECTION.RIGHT) {
-            return x >= (this.dimensions.width - this.size);
-        }
-        return x <= 0;
-    }
-
     /** Removes the node from the html and clears the interval */
     stop() {
         clearInterval(this.intervalId);
         this.node.remove();
+        this.removed = true;
     }
 }
 
