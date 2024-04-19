@@ -62,7 +62,7 @@ describe('main', () => {
             const rect = document.getElementById('zone').getBoundingClientRect();
             const node = new AnimatedNode(10, 30, 5, rect, '#zone');
 
-            node.setInitialSlope(true);
+            node.setInitialSlope();
 
             expect(node.direction).toBe(DIRECTION.RIGHT);
             expect(node.a).toBe(0.125);
@@ -72,7 +72,7 @@ describe('main', () => {
         it('sets new slope', () => {
             const rect = document.getElementById('zone').getBoundingClientRect();
             const node = new AnimatedNode(10, 30, 5, rect, '#zone');
-            node.setInitialSlope(true);
+            node.setInitialSlope();
 
             node.x = 50;
             node.y = 25;
@@ -97,7 +97,6 @@ describe('main', () => {
 
 function setGlobals() {
     document.body.innerHTML = `
-    <button id="stop" type="button">Stop</button>
     <div id="zone" style="top: 0; left: 0; right: 0; bottom: 0"><div>
     <template id="drop"><span class="drop"></span></template>
 `;

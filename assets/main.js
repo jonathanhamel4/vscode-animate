@@ -1,3 +1,5 @@
+const isTestEnvironment = typeof jest !== 'undefined';
+
 function main() {
     const animator = new Animator();
 
@@ -268,9 +270,9 @@ class AnimatedNode {
     }
 
     /** Defines the initial slope of the drop given the starting point and the first collision */
-    setInitialSlope(test) {
+    setInitialSlope() {
         const centerY = this.dimensions.height / 2;
-        const goingRight = test ? true : Math.round(Math.random()) === 1;
+        const goingRight = isTestEnvironment ? true : Math.round(Math.random()) === 1;
         const initialX = goingRight ? this.dimensions.width : 0;
 
         // y = ax + b;
@@ -298,8 +300,8 @@ class AnimatedNode {
     }
 }
 
-if (typeof jest !== 'undefined') {
+if (isTestEnvironment) {
     module.exports = { AnimatedNode, main, DIRECTION };
 } else {
-    main(true);
+    main();
 }
