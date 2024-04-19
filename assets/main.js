@@ -268,9 +268,9 @@ class AnimatedNode {
     }
 
     /** Defines the initial slope of the drop given the starting point and the first collision */
-    setInitialSlope() {
+    setInitialSlope(test) {
         const centerY = this.dimensions.height / 2;
-        const goingRight = Math.round(Math.random()) === 1;
+        const goingRight = test ? true : Math.round(Math.random()) === 1;
         const initialX = goingRight ? this.dimensions.width : 0;
 
         // y = ax + b;

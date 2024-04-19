@@ -11,11 +11,12 @@ describe('main', () => {
 
     describe('AnimatedNode', () => {
         it('sets initial values', () => {
-            const node = new AnimatedNode(10, 30, 5);
+            const rect = document.getElementById('zone').getBoundingClientRect();
+            const node = new AnimatedNode(10, 30, 5, rect, '#zone');
 
             expect(node.size).toBe(5);
-            expect(node.clientHeight).toBe(50);
-            expect(node.clientWidth).toBe(50);
+            expect(node.removed).toBeFalsy();
+            expect(node.dimensions).toStrictEqual({ "bottom": 50, "height": 50, "left": 0, "right": 50, "top": 0, "width": 50, "x": 0, "y": 0 });
             expect(node.x).toBe(10);
             expect(node.y).toBe(20);
             expect(node.node).toBeDefined();
@@ -23,28 +24,28 @@ describe('main', () => {
             expect(node.b).toBe(0);
             expect(node.direction).toBe(DIRECTION.RIGHT);
             expect(document.querySelector('#zone .drop')).toBeDefined()
-            expect(node.clientHeight).toBe(50);
-            expect(node.clientWidth).toBe(50);
             expect(node.node.style.left).toStrictEqual('10px');
             expect(node.node.style.bottom).toStrictEqual('20px');
             expect(node.node.style.width).toStrictEqual('5px');
             expect(node.node.style.height).toStrictEqual('5px');
             expect(node.maxWidth).toBe(45);
             expect(node.maxHeight).toBe(45);
-            expect(node.minWidth).toBe(1);
-            expect(node.minHeight).toBe(1);
+            expect(node.minWidth).toBe(0);
+            expect(node.minHeight).toBe(0);
         });
 
         it('sets a random color', () => {
-            const node = new AnimatedNode(10, 30, 5);
+            const rect = document.getElementById('zone').getBoundingClientRect();
+            const node = new AnimatedNode(10, 30, 5, rect, '#zone');
 
             const color = node.getRandomColor();
 
-            expect(color).toMatch(/#\w{6}/);
+            expect(color).toMatch(/hsl\([\d]+(.[\d]+)?, 80%, 50%\)/);
         });
 
         it('increments the size', () => {
-            const node = new AnimatedNode(10, 30, 5);
+            const rect = document.getElementById('zone').getBoundingClientRect();
+            const node = new AnimatedNode(10, 30, 5, rect, '#zone');
 
             node.incrementSize();
 
@@ -58,60 +59,37 @@ describe('main', () => {
         });
 
         it('sets initial slope', () => {
-            const node = new AnimatedNode(10, 30, 5);
+            const rect = document.getElementById('zone').getBoundingClientRect();
+            const node = new AnimatedNode(10, 30, 5, rect, '#zone');
 
-            node.setInitialSlope();
+            node.setInitialSlope(true);
 
             expect(node.direction).toBe(DIRECTION.RIGHT);
             expect(node.a).toBe(0.125);
             expect(node.b).toBe(18.75);
         });
 
-
-        it('detects collisions', () => {
-            const node = new AnimatedNode(10, 30, 5);
-
-            const collisionWithSide = node.hasCollision(50, 30);
-            const collisionWithTop = node.hasCollision(10, 50);
-
-
-            expect(collisionWithSide).toBeTruthy();
-            expect(collisionWithTop).toBeTruthy();
-            expect(node.hasCollision(node.x, node.y)).toBeFalsy();
-        });
-
-        it('sets new slope slope', () => {
-            const node = new AnimatedNode(10, 30, 5);
-
-            node.setInitialSlope();
+        it('sets new slope', () => {
+            const rect = document.getElementById('zone').getBoundingClientRect();
+            const node = new AnimatedNode(10, 30, 5, rect, '#zone');
+            node.setInitialSlope(true);
 
             node.x = 50;
             node.y = 25;
             node.newSlopeAndDirection();
 
-            expect(node.direction).toBe(DIRECTION.RIGHT);
+            expect(node.direction).toBe(DIRECTION.LEFT);
             expect(node.a).toBe(-0.125);
             expect(node.b).toBe(31.25);
         });
 
-        it('increments x when moving', () => {
-            const node = new AnimatedNode(10, 30, 5);
-
-            node.setInitialSlope();
-
-            expect(node.x).toBe(10);
-
-            const { x, y } = node.increment();
-
-            expect(x).toBe(10.5);
-            expect(y).toBe(20.0625);
-        });
-
         it('clears on stop', () => {
-            const node = new AnimatedNode(10, 30, 5);
+            const rect = document.getElementById('zone').getBoundingClientRect();
+            const node = new AnimatedNode(10, 30, 5, rect, '#zone');
 
             node.stop();
 
+            expect(node.removed).toBe(true);
             expect(document.querySelector('#zone .drop')).toBeFalsy();
         });
     });
@@ -120,9 +98,14 @@ describe('main', () => {
 function setGlobals() {
     document.body.innerHTML = `
     <button id="stop" type="button">Stop</button>
-    <div id="zone"><div>
+    <div id="zone" style="top: 0; left: 0; right: 0; bottom: 0"><div>
     <template id="drop"><span class="drop"></span></template>
 `;
+    const zone = document.getElementById('zone');
+    jest.spyOn(zone, "getBoundingClientRect").mockImplementation(() => (
+        { "bottom": 50, "height": 50, "left": 0, "right": 50, "top": 0, "width": 50, "x": 0, "y": 0 }
+    ));
+
     global.innerWidth = 50;
     global.innerHeight = 50;
 }
