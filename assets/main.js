@@ -172,11 +172,7 @@ class AnimatedNode {
 
     /** returns a random color */
     getRandomColor() {
-        const letters = '0123456789ABCDEF';
-        let color = '#';
-        for (let i = 0; i < 6; i++) {
-            color += letters[Math.floor(Math.random() * 16)];
-        }
+        const color = "hsl(" + Math.random() * 360 + ", 80%, 50%)";
         return color;
     }
 
@@ -289,9 +285,7 @@ class AnimatedNode {
         const collisionWithSide = this.x <= this.minWidth || this.x >= this.maxWidth;
         if (collisionWithSide) {
             this.direction = DIRECTION.OPPOSITE[this.direction];
-
         }
-
         this.a = this.a * - 1;
         this.b = this.y - this.a * this.x;
     }
