@@ -2,20 +2,7 @@ const isTestEnvironment = typeof jest !== 'undefined';
 
 function main() {
     const animator = new Animator();
-
-    document.addEventListener('mousedown', (e) => {
-        if (e.target.id === animator.stopButton.id) { return; }
-        animator.createNode(e.clientX, e.clientY);
-    });
-
-    document.addEventListener('mouseup', (e) => {
-        if (e.target.id === animator.stopButton.id) { return; }
-        animator.releaseNode(true);
-    });
-
-    window.addEventListener('resize', () => {
-        animator.resize();
-    });
+    animator.listen();
 };
 
 const DIRECTION = function () {
@@ -38,6 +25,7 @@ class Animator {
         this.stopButton = new StopButton('stop', '#zone', resetNodes);
         this.sizeIntervalId = null;
         this.tempAnimatedNode = null;
+        this.resize();
     }
 
     createZone() {
@@ -60,6 +48,7 @@ class Animator {
         this.sizeIntervalId = setInterval(() => {
             this.tempAnimatedNode.incrementSize();
         }, 200);
+        this.nodes.push(this.tempAnimatedNode);
     }
 
     releaseNode(browser) {
@@ -67,7 +56,6 @@ class Animator {
         if (browser) {
             this.tempAnimatedNode.animate();
         }
-        this.nodes.push(this.tempAnimatedNode);
         this.stopButton.show();
         this.reset();
     }
@@ -78,10 +66,25 @@ class Animator {
     }
 
     resize() {
-        const clientDimensions = this.zone.getBoundingClientRect();
+        this.dimensions = this.zone.getBoundingClientRect();
         this.nodes.forEach((node) => {
-            node.setDimensions(clientDimensions);
-            node.setNodePosition();
+            node.setDimensions(this.dimensions);
+        });
+    }
+
+    listen() {
+        document.addEventListener('mousedown', (e) => {
+            if (e.target.id === this.stopButton.id || e.button === 2) { return; }
+            this.createNode(e.clientX, e.clientY);
+        });
+
+        document.addEventListener('mouseup', (e) => {
+            if (e.target.id === this.stopButton.id) { return; }
+            this.releaseNode(true);
+        });
+
+        window.addEventListener('resize', () => {
+            this.resize();
         });
     }
 
@@ -230,7 +233,7 @@ class AnimatedNode {
             { transform: `translate(${xDiff}px, ${yDiff}px)` },
         ];
         const lengthToTravel = Math.sqrt(Math.abs(xDiff) ** 2 + Math.abs(yDiff) ** 2);
-        const fastestDuration = 2000 * lengthToTravel / this.maxWidth;
+        const fastestDuration = 2000 * lengthToTravel / 300;
         const sizeFactor = this.size === 5 ? 1 : 1 + (this.size / 10);
         const duration = fastestDuration * sizeFactor;
 

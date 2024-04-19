@@ -23,7 +23,7 @@ describe('main', () => {
             expect(node.a).toBe(0);
             expect(node.b).toBe(0);
             expect(node.direction).toBe(DIRECTION.RIGHT);
-            expect(document.querySelector('#zone .drop')).toBeDefined()
+            expect(document.querySelector('#zone .drop')).toBeDefined();
             expect(node.node.style.left).toStrictEqual('10px');
             expect(node.node.style.bottom).toStrictEqual('20px');
             expect(node.node.style.width).toStrictEqual('5px');
