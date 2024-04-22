@@ -20,6 +20,7 @@ const DIRECTION = function () {
 class Animator {
     constructor() {
         this.createZone();
+        this.dimensions = this.zone.getBoundingClientRect();
         this.nodes = [];
         const resetNodes = this.resetNodes.bind(this);
         this.stopButton = new StopButton('stop', '#zone', resetNodes);
@@ -43,8 +44,7 @@ class Animator {
     }
 
     createNode(x, y) {
-        const clientDimensions = this.zone.getBoundingClientRect();
-        this.tempAnimatedNode = new AnimatedNode(x, y, 5, clientDimensions, '#zone');
+        this.tempAnimatedNode = new AnimatedNode(x, y, 5, this.dimensions, '#zone');
         this.sizeIntervalId = setInterval(() => {
             this.tempAnimatedNode.incrementSize();
         }, 200);
@@ -229,19 +229,7 @@ class AnimatedNode {
         const nextCollision = this.getNextCrossingCoordinate();
         const xDiff = nextCollision.x - this.x;
         const yDiff = (nextCollision.y - this.y) * -1;
-        const keyframes = [
-            { transform: `translate(${xDiff}px, ${yDiff}px)` },
-        ];
-        const lengthToTravel = Math.sqrt(Math.abs(xDiff) ** 2 + Math.abs(yDiff) ** 2);
-        const fastestDuration = 2000 * lengthToTravel / 300;
-        const sizeFactor = this.size === 5 ? 1 : 1 + (this.size / 10);
-        const duration = fastestDuration * sizeFactor;
-
-        const animation = {
-            duration,
-            iterations: 1,
-        };
-
+        const { keyframes, animation } = this.getKeyframesAndAnimation(xDiff, yDiff);
         const promise = this.node.animate(keyframes, animation);
 
         promise.finished.then(() => {
@@ -253,6 +241,24 @@ class AnimatedNode {
             this.newSlopeAndDirection();
             this.moveWithJsAnimation();
         });
+    }
+
+    /** Returns keyframes and a animation object given a X,Y coordinate to animate to */
+    getKeyframesAndAnimation(newX, newY) {
+        const keyframes = [
+            { transform: `translate(${newX}px, ${newY}px)` },
+        ];
+        const lengthToTravel = Math.sqrt(Math.abs(newX) ** 2 + Math.abs(newY) ** 2);
+        const fastestDuration = 2000 * lengthToTravel / 300; // Travel 300px in 2 seconds.
+        const sizeFactor = this.size === 5 ? 1 : 1 + (this.size / 10); // The bigger you are, the slower you are.
+        const duration = fastestDuration * sizeFactor;
+
+        const animation = {
+            duration,
+            iterations: 1,
+        };
+
+        return { keyframes, animation };
     }
 
     /** Given a slope and a direction, find the next logical intersection with the boundary */
@@ -297,7 +303,6 @@ class AnimatedNode {
 
     /** Removes the node from the html and clears the interval */
     stop() {
-        clearInterval(this.intervalId);
         this.node.remove();
         this.removed = true;
     }
