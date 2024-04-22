@@ -1,41 +1,58 @@
-const isTestEnvironment = typeof jest !== 'undefined';
+// @ts-check
+const isTestEnvironment = "jest" in window;
 
+/**
+ * Main function that runs in the browser
+ */
 function main() {
     const animator = new Animator();
     animator.listen();
 };
 
-const DIRECTION = function () {
-    const dir = {
-        RIGHT: 1,
-        LEFT: -1,
-    };
-    dir['OPPOSITE'] = {
-        [dir.LEFT]: dir.RIGHT,
-        [dir.RIGHT]: dir.LEFT
-    };
-    return dir;
-}();
+const DIRECTION = {
+    RIGHT: 1,
+    LEFT: -1,
+    OPPOSITE: {
+        "-1": 1,
+        1: -1,
+    }
+};
 
 class Animator {
     constructor() {
-        this.createZone();
+        /** @type {HTMLSpanElement} */
+        this.zone = this.createZone();
+        /** @type {DOMRect} */
         this.dimensions = this.zone.getBoundingClientRect();
+        /** @type {AnimatedNode[]} */
         this.nodes = [];
+        /** @type {() => void} */
         const resetNodes = this.resetNodes.bind(this);
+        /** @type {StopButton} */
         this.stopButton = new StopButton('stop', '#zone', resetNodes);
-        this.sizeIntervalId = null;
+        /** @type {NodeJS.Timeout | undefined} */
+        this.sizeIntervalId = undefined;
+        /** @type {AnimatedNode | null} */
         this.tempAnimatedNode = null;
+        /** @type {() => void} */
         this.resize();
     }
 
+    /**
+     * Creates the bouncing area
+     * @returns {HTMLDivElement}
+     */
     createZone() {
-        this.zone = document.createElement('div');
-        this.zone.id = 'zone';
+        const zone = document.createElement('div');
+        zone.id = 'zone';
         const body = document.querySelector('body');
-        document.querySelector('body').insertBefore(this.zone, body.firstChild);
+        body?.insertBefore(zone, body.firstChild);
+        return zone;
     }
 
+    /**
+     * Removes all nodes from the DOM and clears the array
+     */
     resetNodes() {
         this.nodes.forEach((node) => {
             node.stop();
@@ -43,28 +60,44 @@ class Animator {
         this.nodes = [];
     }
 
+    /**
+     * Creates the drop node and starts the auto grow interval.
+     * @param {number} x 
+     * @param {number} y 
+     */
     createNode(x, y) {
         this.tempAnimatedNode = new AnimatedNode(x, y, 5, this.dimensions, '#zone');
-        this.sizeIntervalId = setInterval(() => {
-            this.tempAnimatedNode.incrementSize();
-        }, 200);
         this.nodes.push(this.tempAnimatedNode);
+        this.sizeIntervalId = setInterval(() => {
+            this.tempAnimatedNode?.incrementSize();
+        }, 200);
     }
 
-    releaseNode(browser) {
+    /**
+     * Clears the intervals and animates the node is parameter is true. 
+     * It also shows the stop button and resets the intervals for the next node.
+     * @param {boolean} animate 
+     */
+    releaseNode(animate) {
         clearInterval(this.sizeIntervalId);
-        if (browser) {
-            this.tempAnimatedNode.animate();
+        if (animate) {
+            this.tempAnimatedNode?.animate();
         }
         this.stopButton.show();
-        this.reset();
+        this.resetDefaults();
     }
 
-    reset() {
+    /**
+     * Resets timers
+     */
+    resetDefaults() {
         this.tempAnimatedNode = null;
-        this.sizeIntervalId = null;
+        this.sizeIntervalId = undefined;
     }
 
+    /** 
+     * Resizes the bouncing area 
+     */
     resize() {
         this.dimensions = this.zone.getBoundingClientRect();
         this.nodes.forEach((node) => {
@@ -72,14 +105,19 @@ class Animator {
         });
     }
 
+    /**
+     * Adds event listeners
+     */
     listen() {
         document.addEventListener('mousedown', (e) => {
-            if (e.target.id === this.stopButton.id || e.button === 2) { return; }
+            const id = e.target && 'id' in e.target ? e.target.id : null;
+            if (id === this.stopButton.id || e.button === 2) { return; }
             this.createNode(e.clientX, e.clientY);
         });
 
         document.addEventListener('mouseup', (e) => {
-            if (e.target.id === this.stopButton.id) { return; }
+            const id = e.target && 'id' in e.target ? e.target.id : null;
+            if (id === this.stopButton.id) { return; }
             this.releaseNode(true);
         });
 
@@ -91,8 +129,16 @@ class Animator {
 }
 
 class StopButton {
+    /**
+     * Stop button class
+     * @param {string} id 
+     * @param {string} container 
+     * @param {() => void} reset 
+     */
     constructor(id, container, reset) {
+        /** @type {string} */
         this.id = id;
+        /** @type {HTMLButtonElement} */
         this.button = document.createElement('button');
         this.button.type = 'button';
         this.button.id = id;
@@ -105,7 +151,8 @@ class StopButton {
         };
 
         this.button.onclick = onClick;
-        document.querySelector(container).insertBefore(this.button, document.querySelector(container).firstChild);
+        const containerNode = document.querySelector(container);
+        containerNode?.insertBefore(this.button, containerNode.firstChild);
     }
 
     click() {
@@ -118,20 +165,36 @@ class StopButton {
 }
 
 class AnimatedNode {
+    /**
+     * Animated node class
+     * @param {number} x 
+     * @param {number} y 
+     * @param {number} size 
+     * @param {DOMRect} dimensions 
+     * @param {string} selector 
+     */
     constructor(x, y, size, dimensions, selector) {
-        // init
+        /** @type {number} */
         this.size = size;
+        /** @type {boolean} */
         this.removed = false;
-        this.setDimensions(dimensions);
+        /** @type {DOMRect} */
+        this.dimensions = dimensions;
+        /** @type {number} */
         this.x = x - this.dimensions.left;
         const trueY = y - this.dimensions.top;
+        /** @type {number} */
         this.y = this.dimensions.height - trueY;
+        /** @type {HTMLSpanElement} */
         this.node = this.createNode();
         this.setNodePosition();
 
         // slope info
+        /** @type {number} */
         this.a = 0;
+        /** @type {number} */
         this.b = 0;
+        /** @type {number} */
         this.direction = DIRECTION.RIGHT;
 
         // add
@@ -154,7 +217,9 @@ class AnimatedNode {
         return 0;
     }
 
-    /** If a drop was created outside of the zone */
+    /** 
+     * If a drop was created outside of the zone 
+     */
     resetOverflow() {
         if (this.x <= this.size) {
             this.x = this.size + 5;
@@ -170,18 +235,26 @@ class AnimatedNode {
         }
     }
 
-    /** Keeps the DomRect from the container */
+    /**
+     * Keeps the DomRect from the container
+     * @param {DOMRect} dimensions 
+     */
     setDimensions(dimensions) {
         this.dimensions = dimensions;
     }
 
-    /** returns a random color */
+    /** 
+     * Returns a random hsl color
+     * @returns {string}
+     */
     getRandomColor() {
         const color = "hsl(" + Math.random() * 360 + ", 80%, 50%)";
         return color;
     }
 
-    /** Sets the actual absolute positioning of the drop */
+    /**
+     * Sets the actual absolute positioning of the drop
+     */
     setNodePosition() {
         this.resetOverflow();
         this.node.style.left = this.x + 'px';
@@ -190,7 +263,9 @@ class AnimatedNode {
         this.node.style.height = this.size + 'px';
     }
 
-    /** Increments the size and centers the element with the cursor while the cursor is being held */
+    /**
+     * Increments the size and centers the element with the cursor while the cursor is being held
+     */
     incrementSize() {
         if (this.size > 50) { return; }
         this.size += 2;
@@ -199,22 +274,38 @@ class AnimatedNode {
         this.setNodePosition();
     }
 
-    /** Creates the node that will be moving */
+    /**
+     * Creates the node that will be moving
+     * @returns {HTMLSpanElement}
+     */
     createNode() {
         const template = document.querySelector("#drop");
-        const copy = template.cloneNode(true).content;
-        const node = copy.querySelector('.drop');
+        if (!template) {
+            throw new Error('Missing drop template');
+        }
+        const copy = template.cloneNode(true);
+        if (!(copy instanceof HTMLTemplateElement)) {
+            throw new Error('Invalid template element');
+        }
+        const node = copy.content.querySelector('.drop');
+        if (!(node instanceof HTMLSpanElement)) {
+            throw new Error("Invalid drop html element type");
+        }
         node.style.backgroundColor = this.getRandomColor();
         return node;
     }
 
-    /** Adds the node to the html document */
+    /**
+     * Adds the node to the html document
+     * @param {string} selector 
+     */
     appendHtmlNode(selector) {
         const zone = document.querySelector(selector);
-        zone.appendChild(this.node);
+        zone?.appendChild(this.node);
     }
 
-    /** Starts the animation of the element. It defines the initial slope based on the
+    /** 
+     * Starts the animation of the element. It defines the initial slope based on the
      * initial click and the (x,y) defined by the center of the right edge.
      */
     animate() {
@@ -222,7 +313,8 @@ class AnimatedNode {
         this.moveWithJsAnimation();
     }
 
-    /** Uses the animate JS api to animate the drop between the edges
+    /** 
+     * Uses the animate JS api to animate the drop between the edges
      * and uses the `finished` promise to trigger the next animation
      */
     moveWithJsAnimation() {
@@ -243,7 +335,12 @@ class AnimatedNode {
         });
     }
 
-    /** Returns keyframes and a animation object given a X,Y coordinate to animate to */
+    /**
+     * Returns keyframes and a animation object given a X,Y coordinate to animate to
+     * @param {number} newX 
+     * @param {number} newY 
+     * @returns {{keyframes: Record<string, string>[], animation: {duration: number, iterations: number}}}
+     */
     getKeyframesAndAnimation(newX, newY) {
         const keyframes = [
             { transform: `translate(${newX}px, ${newY}px)` },
@@ -261,7 +358,10 @@ class AnimatedNode {
         return { keyframes, animation };
     }
 
-    /** Given a slope and a direction, find the next logical intersection with the boundary */
+    /**
+     * Given a slope and a direction, find the next logical intersection with the boundary
+     * @returns {{x: number, y: number}}
+     */
     getNextCrossingCoordinate() {
         const xIfHittingSide = this.direction === DIRECTION.RIGHT ? this.maxWidth : this.minWidth;
         const yIfHittingSide = this.a * xIfHittingSide + this.b;
@@ -278,7 +378,9 @@ class AnimatedNode {
         return { x: (tempY - this.b) / this.a, y: tempY };
     }
 
-    /** Defines the initial slope of the drop given the starting point and the first collision */
+    /** 
+     * Defines the initial slope of the drop given the starting point and the first collision 
+     */
     setInitialSlope() {
         const centerY = this.dimensions.height / 2;
         const goingRight = isTestEnvironment ? true : Math.round(Math.random()) === 1;
@@ -291,7 +393,9 @@ class AnimatedNode {
         this.direction = goingRight ? DIRECTION.RIGHT : DIRECTION.LEFT;
     }
 
-    /** Adjusts the slope and direction whenever there is a collision */
+    /** 
+     * Adjusts the slope and direction whenever there is a collision
+     */
     newSlopeAndDirection() {
         const collisionWithSide = this.x <= this.minWidth || this.x >= this.maxWidth;
         if (collisionWithSide) {
@@ -301,7 +405,9 @@ class AnimatedNode {
         this.b = this.y - this.a * this.x;
     }
 
-    /** Removes the node from the html and clears the interval */
+    /** 
+     * Removes the node from the html and clears the interval 
+     */
     stop() {
         this.node.remove();
         this.removed = true;
