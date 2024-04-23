@@ -1,4 +1,7 @@
 // @ts-check
+
+/** @typedef {'up' | 'right' | 'down' | 'left'} Directions */
+
 const isTestEnvironment = "jest" in window;
 
 /**
@@ -221,14 +224,14 @@ class AnimatedNode {
      * If a drop was created outside of the zone 
      */
     resetOverflow() {
-        if (this.x <= this.size) {
-            this.x = this.size + 5;
+        if (this.x <= this.minWidth) {
+            this.x = this.minWidth + 5;
         }
         if (this.x >= this.maxWidth) {
             this.x = this.maxWidth - 5;
         }
-        if (this.y <= this.size) {
-            this.y = this.size + 5;
+        if (this.y <= this.minWidth) {
+            this.y = this.minWidth + 5;
         }
         if (this.y >= this.maxHeight) {
             this.y = this.maxHeight - 5;
@@ -280,10 +283,7 @@ class AnimatedNode {
      */
     createNode() {
         const template = document.querySelector("#drop");
-        if (!template) {
-            throw new Error('Missing drop template');
-        }
-        const copy = template.cloneNode(true);
+        const copy = template?.cloneNode(true);
         if (!(copy instanceof HTMLTemplateElement)) {
             throw new Error('Invalid template element');
         }
@@ -382,15 +382,40 @@ class AnimatedNode {
      * Defines the initial slope of the drop given the starting point and the first collision 
      */
     setInitialSlope() {
-        const centerY = this.dimensions.height / 2;
-        const goingRight = isTestEnvironment ? true : Math.round(Math.random()) === 1;
-        const initialX = goingRight ? this.dimensions.width : 0;
+        /** @type {Directions[]} */
+        const directions = ['up', 'right', 'down', 'left']
+        /** @type {Directions} */
+        let randomDirection = 'right';
+        if (!isTestEnvironment) {
+            randomDirection = directions[Math.floor(Math.random() * 4)];
+        }
 
-        // y = ax + b;
-        // initial slope (y2-y1)/(x2-x1)
-        this.a = (centerY - this.y) / (initialX - this.x);
+        const positionByDirection = {
+            'up': {
+                x: this.dimensions.width / 2,
+                y: this.dimensions.height,
+                direction: ((this.dimensions.width / 2) - this.x) < 0 ? DIRECTION.LEFT : DIRECTION.RIGHT,
+            },
+            'right': {
+                x: this.dimensions.width,
+                y: this.dimensions.height / 2,
+                direction: DIRECTION.RIGHT,
+            },
+            'down': {
+                x: this.dimensions.width / 2,
+                y: 0,
+                direction: ((this.dimensions.width / 2) - this.x) < 0 ? DIRECTION.LEFT : DIRECTION.RIGHT,
+            },
+            'left': {
+                x: 0,
+                y: this.dimensions.height / 2,
+                direction: DIRECTION.LEFT,
+            }
+        };
+        const { x, y, direction } = positionByDirection[randomDirection];
+        this.a = (y - this.y) / (x - this.x);
         this.b = (this.a * this.x - this.y) * -1;
-        this.direction = goingRight ? DIRECTION.RIGHT : DIRECTION.LEFT;
+        this.direction = direction;
     }
 
     /** 
