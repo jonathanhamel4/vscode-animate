@@ -1067,7 +1067,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/vscode@npm:^1.88.0":
+"@types/vscode@npm:^1.87.0":
   version: 1.88.0
   resolution: "@types/vscode@npm:1.88.0"
   checksum: 10c0/3d5f7394d654a3104be668aef0e41a76ac6dbc0319bee54f9070404c73b1f61e1b1ffc2ed2e7efabe7950f5afaa69f1097fa51c2c36c89e3d04b8ded25d28a00
@@ -1562,7 +1562,7 @@ __metadata:
   dependencies:
     "@types/mocha": "npm:^10.0.6"
     "@types/node": "npm:18.x"
-    "@types/vscode": "npm:^1.88.0"
+    "@types/vscode": "npm:^1.87.0"
     "@typescript-eslint/eslint-plugin": "npm:^7.4.0"
     "@typescript-eslint/parser": "npm:^7.4.0"
     "@vscode/test-cli": "npm:^0.0.8"
