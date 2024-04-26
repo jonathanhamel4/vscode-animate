@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-const { AnimatedNode, DIRECTION } = require('../assets/main.js');
+const { AnimatedNode, Direction } = require('../assets/main.js');
 
 describe('main', () => {
     beforeEach(() => {
@@ -22,7 +22,7 @@ describe('main', () => {
             expect(node.node).toBeDefined();
             expect(node.a).toBe(0);
             expect(node.b).toBe(0);
-            expect(node.direction).toBe(DIRECTION.RIGHT);
+            expect(node.direction).toBe(Direction.Right);
             expect(document.querySelector('#zone .drop')).toBeDefined();
             expect(node.node.style.left).toStrictEqual('10px');
             expect(node.node.style.bottom).toStrictEqual('20px');
@@ -64,7 +64,7 @@ describe('main', () => {
 
             node.setInitialSlope();
 
-            expect(node.direction).toBe(DIRECTION.RIGHT);
+            expect(node.direction).toBe(Direction.Right);
             expect(node.a).toBe(0.125);
             expect(node.b).toBe(18.75);
         });
@@ -78,7 +78,7 @@ describe('main', () => {
             node.y = 25;
             node.newSlopeAndDirection();
 
-            expect(node.direction).toBe(DIRECTION.LEFT);
+            expect(node.direction).toBe(Direction.Left);
             expect(node.a).toBe(-0.125);
             expect(node.b).toBe(31.25);
         });

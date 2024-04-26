@@ -1,8 +1,7 @@
 // @ts-check
 
-/** @typedef {'up' | 'right' | 'down' | 'left'} Directions */
-
-const isTestEnvironment = "jest" in window;
+// @ts-expect-error
+const isTestEnvironment = jest !== undefined;
 
 /**
  * Main function that runs in the browser
@@ -12,14 +11,18 @@ function main() {
     animator.listen();
 };
 
-const DIRECTION = {
-    RIGHT: 1,
-    LEFT: -1,
-    OPPOSITE: {
-        "-1": 1,
-        1: -1,
+class Direction {
+    static Right = 1;
+    static Left = -1;
+    /**
+     * 
+     * @param {number} direction 
+     * @returns {number}
+     */
+    static Opposite(direction) {
+        return direction * -1;
     }
-};
+}
 
 class Animator {
     constructor() {
@@ -198,7 +201,7 @@ class AnimatedNode {
         /** @type {number} */
         this.b = 0;
         /** @type {number} */
-        this.direction = DIRECTION.RIGHT;
+        this.direction = Direction.Right;
 
         // add
         this.appendHtmlNode(selector);
@@ -363,14 +366,14 @@ class AnimatedNode {
      * @returns {{x: number, y: number}}
      */
     getNextCrossingCoordinate() {
-        const xIfHittingSide = this.direction === DIRECTION.RIGHT ? this.maxWidth : this.minWidth;
+        const xIfHittingSide = this.direction === Direction.Right ? this.maxWidth : this.minWidth;
         const yIfHittingSide = this.a * xIfHittingSide + this.b;
         if (yIfHittingSide <= this.maxHeight && yIfHittingSide >= this.minHeight) {
             return { x: xIfHittingSide, y: yIfHittingSide };
         }
 
         let tempY;
-        if (this.direction === DIRECTION.RIGHT) {
+        if (this.direction === Direction.Right) {
             tempY = this.a > 0 ? this.maxHeight : this.minHeight;
         } else {
             tempY = this.a > 0 ? this.minHeight : this.maxHeight;
@@ -382,8 +385,9 @@ class AnimatedNode {
      * Defines the initial slope of the drop given the starting point and the first collision 
      */
     setInitialSlope() {
+        /** @typedef {'up' | 'right' | 'down' | 'left'} Directions */
         /** @type {Directions[]} */
-        const directions = ['up', 'right', 'down', 'left']
+        const directions = ['up', 'right', 'down', 'left'];
         /** @type {Directions} */
         let randomDirection = 'right';
         if (!isTestEnvironment) {
@@ -394,22 +398,22 @@ class AnimatedNode {
             'up': {
                 x: this.dimensions.width / 2,
                 y: this.dimensions.height,
-                direction: ((this.dimensions.width / 2) - this.x) < 0 ? DIRECTION.LEFT : DIRECTION.RIGHT,
+                direction: ((this.dimensions.width / 2) - this.x) < 0 ? Direction.Left : Direction.Right,
             },
             'right': {
                 x: this.dimensions.width,
                 y: this.dimensions.height / 2,
-                direction: DIRECTION.RIGHT,
+                direction: Direction.Right,
             },
             'down': {
                 x: this.dimensions.width / 2,
                 y: 0,
-                direction: ((this.dimensions.width / 2) - this.x) < 0 ? DIRECTION.LEFT : DIRECTION.RIGHT,
+                direction: ((this.dimensions.width / 2) - this.x) < 0 ? Direction.Left : Direction.Right,
             },
             'left': {
                 x: 0,
                 y: this.dimensions.height / 2,
-                direction: DIRECTION.LEFT,
+                direction: Direction.Left,
             }
         };
         const { x, y, direction } = positionByDirection[randomDirection];
@@ -424,7 +428,7 @@ class AnimatedNode {
     newSlopeAndDirection() {
         const collisionWithSide = this.x <= this.minWidth || this.x >= this.maxWidth;
         if (collisionWithSide) {
-            this.direction = DIRECTION.OPPOSITE[this.direction];
+            this.direction = Direction.Opposite(this.direction);
         }
         this.a = this.a * - 1;
         this.b = this.y - this.a * this.x;
@@ -440,7 +444,7 @@ class AnimatedNode {
 }
 
 if (isTestEnvironment) {
-    module.exports = { AnimatedNode, main, DIRECTION };
+    module.exports = { AnimatedNode, main, Direction, Animator };
 } else {
     main();
 }
