@@ -1,7 +1,7 @@
 // @ts-check
 
 // @ts-expect-error
-const isTestEnvironment = jest !== undefined;
+const isTestEnvironment = typeof jest !== 'undefined';
 
 /**
  * Main function that runs in the browser
