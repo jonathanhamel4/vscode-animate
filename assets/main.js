@@ -26,6 +26,7 @@ class Direction {
 
 class Animator {
     constructor() {
+        this.zoneId = 'zone';
         /** @type {HTMLSpanElement} */
         this.zone = this.createZone();
         /** @type {DOMRect} */
@@ -35,7 +36,7 @@ class Animator {
         /** @type {() => void} */
         const resetNodes = this.resetNodes.bind(this);
         /** @type {StopButton} */
-        this.stopButton = new StopButton('stop', '#zone', resetNodes);
+        this.stopButton = new StopButton('stop', `#${this.zoneId}`, resetNodes);
         /** @type {NodeJS.Timeout | undefined} */
         this.sizeIntervalId = undefined;
         /** @type {AnimatedNode | null} */
@@ -50,7 +51,7 @@ class Animator {
      */
     createZone() {
         const zone = document.createElement('div');
-        zone.id = 'zone';
+        zone.id = this.zoneId;
         const body = document.querySelector('body');
         body?.insertBefore(zone, body.firstChild);
         return zone;
@@ -72,7 +73,7 @@ class Animator {
      * @param {number} y 
      */
     createNode(x, y) {
-        this.tempAnimatedNode = new AnimatedNode(x, y, 5, this.dimensions, '#zone');
+        this.tempAnimatedNode = new AnimatedNode(x, y, 5, this.dimensions, `#${this.zoneId}`);
         this.nodes.push(this.tempAnimatedNode);
         this.sizeIntervalId = setInterval(() => {
             this.tempAnimatedNode?.incrementSize();
@@ -148,7 +149,7 @@ class StopButton {
         this.button = document.createElement('button');
         this.button.type = 'button';
         this.button.id = id;
-        this.button.innerText = 'Stop';
+        this.button.innerText = 'Clear';
         this.button.style.display = 'none';
 
         const onClick = () => {
@@ -394,6 +395,7 @@ class AnimatedNode {
             randomDirection = directions[Math.floor(Math.random() * 4)];
         }
 
+        /** @type {Record<Directions, {x: number, y: number, direction: number}>} */
         const positionByDirection = {
             'up': {
                 x: this.dimensions.width / 2,
