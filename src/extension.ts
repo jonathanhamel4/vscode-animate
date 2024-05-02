@@ -4,6 +4,8 @@ export function activate(context: vscode.ExtensionContext) {
 	const provider = new AnimateView(context.extensionUri);
 	context.subscriptions.push(
 		vscode.window.registerWebviewViewProvider(AnimateView.viewType, provider));
+
+	context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(e => provider.updateTheme()));
 }
 
 // This method is called when your extension is deactivated
@@ -13,9 +15,17 @@ class AnimateView {
 	public static readonly viewType = 'animate';
 	private view?: vscode.WebviewView;
 	private readonly extensionUri;
+	private readonly dark = 'dark';
+	private readonly light = 'light';
 
 	constructor(extensionUri: vscode.Uri) {
 		this.extensionUri = extensionUri;
+	}
+
+	public updateTheme() {
+		const bodyClass = vscode.window.activeColorTheme.kind === 2 ? this.dark : this.light;
+		const otherClass = bodyClass === this.light ? this.dark : this.light;
+		this.view?.webview.postMessage({ type: 'bodyClass', add: bodyClass, remove: otherClass });
 	}
 
 
@@ -53,7 +63,7 @@ class AnimateView {
 		const styleMainUri = this.view?.webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'assets', 'main.css'));
 
 		const nonce = getNonce();
-		const bodyClass = vscode.window.activeColorTheme.kind === 2 ? 'dark' : 'light';
+		const bodyClass = vscode.window.activeColorTheme.kind === 2 ? this.dark : this.light;
 
 		return `<!DOCTYPE html>
 			<html lang="en">

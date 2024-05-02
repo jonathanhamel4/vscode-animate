@@ -9,6 +9,13 @@ const isTestEnvironment = typeof jest !== 'undefined';
 function main() {
     const animator = new Animator();
     animator.listen();
+
+    window.addEventListener("message", (e) => {
+        if (e.data.type !== 'bodyClass') { return; }
+        const body = document.querySelector('body');
+        body?.classList.remove(e.data.remove);
+        body?.classList.add(e.data.add);
+    });
 };
 
 class Direction {
