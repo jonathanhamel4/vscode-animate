@@ -3,14 +3,15 @@
     width: 5px;
     height: 5px;
     border-radius: 50%;
-    background-color: lightblue;
     position: absolute;
+    border: 1px solid #ffffff63;
+    box-sizing: border-box;
 }
 
 #stop {
     border-radius: 15px;
     border: none;
-    background-color: lightblue;
+    background-color: #cef5ff;
     cursor: pointer;
     opacity: 0.2;
     transition: all 0.3s ease-in;
@@ -27,15 +28,24 @@
 
 #zone {
     position: absolute;
-    top: 20px;
-    left: 20px;
-    bottom: 20px;
-    right: 20px;
-    background-color: #cef5ff;
+    top: 10px;
+    left: 10px;
+    bottom: 10px;
+    right: 10px;
+    border: 1px solid #cef5ff;
     border-radius: 15px;
     overflow: hidden;
+    box-sizing: border-box;
+}
+
+body.light .drop {
+    border: 1px solid #2a29294f;
+}
+
+body.light #stop {
+    background-color: #2a29294f;
 }
 
 body.light #zone {
-    background-color: #effcff;
+    border: 1px solid #2a29294f;
 }
