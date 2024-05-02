@@ -35,7 +35,7 @@ class AnimateView {
 
 	public resolveWebviewView(
 		webviewView: vscode.WebviewView,
-		context: vscode.WebviewViewResolveContext,
+		_context: vscode.WebviewViewResolveContext,
 		_token: vscode.CancellationToken,
 	) {
 		this.view = webviewView;
@@ -67,7 +67,6 @@ class AnimateView {
 		const styleMainUri = this.view?.webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'assets', 'main.css'));
 
 		const nonce = getNonce();
-		const bodyClass = this.theme;
 
 		return `<!DOCTYPE html>
 			<html lang="en">
@@ -79,7 +78,7 @@ class AnimateView {
 				<title>Animate</title>
 				<link href="${styleMainUri}" rel="stylesheet">
 			</head>
-			<body class="noOverflow ${bodyClass}">
+			<body class="noOverflow ${this.theme}">
 				<template id="drop"><span class="drop"></span></template>
 				<script nonce="${nonce}" src="${scriptUri}"></script>
 			</body>
