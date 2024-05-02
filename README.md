@@ -11,5 +11,5 @@ https://github.com/jonathanhamel4/vscode-animate/assets/10457708/ec431813-6cc3-4
 
 ## Installation
 
-Download the vsix <a href="https://github.com/jonathanhamel4/vscode-animate/raw/main/releases/animate-extension-0.0.1.vsix" download>here</a> and then run `code --install-extension animate-extension-0.0.1.vsix` locally and you are all set. Go to your explorer tab and you'll see the `animate` section :) 
+Download the vsix <a href="https://github.com/jonathanhamel4/vscode-animate/raw/main/releases/animate-extension-0.0.2.vsix" download>here</a> and then run `code --install-extension animate-extension-0.0.2.vsix` locally and you are all set. Go to your explorer tab and you'll see the `animate` section :) 
 
