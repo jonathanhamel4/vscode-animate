@@ -5,9 +5,9 @@ Get bouncing balls in your explorer window to help you unwind at the end of your
 This extension is just meant to distract you and is not a productivity tool. 
 
 
+https://github.com/jonathanhamel4/vscode-animate/assets/10457708/5ad16e00-5f4f-4ac2-8a63-9b762e457d38
 
 
-https://github.com/jonathanhamel4/vscode-animate/assets/10457708/ec431813-6cc3-40a1-b2fe-19a0b0f41cfd
 
 ## Installation
 
